@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Тестове завдання</title>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-messaging.js"></script>
+
+    <!-- Socket.io CDN -->
+    <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
+
+</head>
+<body>
+
+<h1>Send Message</h1>
+
+<form id="messageForm">
+    <input type="text" id="title" placeholder="Title" required><br>
+    <textarea id="message" placeholder="Message" required></textarea><br>
+    <button type="submit">Send</button>
+</form>
+
+<script>
+
+    // Firebase конфігурація
+    var firebaseConfig = {
+        apiKey: "",
+        authDomain: "",
+        projectId: "",
+        storageBucket: "",
+        messagingSenderId: "",
+        appId: "",
+        measurementId: ""
+    };
+
+    // Ініціалізація Firebase
+    firebase.initializeApp(firebaseConfig);
+    const messaging = firebase.messaging();
+
+    // Підписка на FCM
+    messaging.getToken({vapidKey: 'vapid'}).then((currentToken) => {
+        if (currentToken) {
+            console.log('FCM Token:', currentToken);
+        } else {
+            console.warn('No registration token available.');
+        }
+    }).catch((err) => {
+        console.error('An error occurred while retrieving token.', err);
+    });
+
+    // Отримання вхідних повідомлень
+    messaging.onMessage((payload) => {
+        console.log('Message received. ', payload);
+        alert(`New message: ${payload.notification.title} - ${payload.notification.body}`);
+    });
+
+    // Підключення до Socket.io
+    const socket = io('http://localhost:3000');
+
+    document.getElementById('messageForm').addEventListener('submit', function (event) {
+        event.preventDefault();
+        const title = document.getElementById('title').value;
+        const message = document.getElementById('message').value;
+
+        // Відправка повідомлення через socket.io
+        socket.emit('newMessage', {title, message});
+    });
+
+    // Реєстрація Service Worker для отримання фонового повідомлення
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('/firebase-messaging-sw.js')
+            .then((registration) => {
+                console.log('Service Worker registered with scope:', registration.scope);
+            }).catch((err) => {
+            console.error('Service Worker registration failed:', err);
+        });
+    }
+
+</script>
+
+</body>
+</html>
